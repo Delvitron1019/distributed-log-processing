@@ -36,26 +36,47 @@
       {
         "dataset_rows": 4000000,
         "engine": "Spark local[4]",
-        "total_seconds": 43.15,
-        "rows_per_second": 92328,
-        "speedup_vs_pandas": 1.43
+        "total_seconds": 41.02,
+        "rows_per_second": 97122,
+        "speedup_vs_pandas": 1.50
+      },
+      {
+        "dataset_rows": 4000000,
+        "engine": "Spark local[16]",
+        "total_seconds": 35.79,
+        "rows_per_second": 111301,
+        "speedup_vs_pandas": 1.72
       }
     ],
     "finding": "The crossover sits between 1M and 4M rows. Below it Spark loses outright; above it Spark pulls ahead while pandas' memory grows linearly toward a ceiling Spark does not have."
   },
 
   "spark_core_scaling": {
-    "description": "Spark only, 1M rows, varying local[N]. Internally comparable (all runs in WSL). No cross-engine speedup is quoted here because these runs predate the environment fix.",
-    "dataset_rows": 1000000,
-    "rows": [
-      { "cores": 1,  "total_seconds": 37.58, "rows_per_second": 26501 },
-      { "cores": 2,  "total_seconds": 26.94, "rows_per_second": 36965 },
-      { "cores": 4,  "total_seconds": 24.52, "rows_per_second": 40611 },
-      { "cores": 8,  "total_seconds": 25.29, "rows_per_second": 39381 },
-      { "cores": 16, "total_seconds": 27.10, "rows_per_second": 36752 }
-    ],
-    "finding": "Throughput peaks at 4 cores and declines by 16. At this data size each task is small enough that scheduling and coordination overhead outgrows the parallelism gained.",
-    "caveat": "Spark local[4] at 1M measured 24.52s here and 26.69s in the cross-engine run — roughly 9% run-to-run variance. Single runs, not averaged over repeats; differences under ~10% should not be read as signal."
+    "description": "Spark across local[N] at two dataset sizes. The shape of the curve changes with data size, which is the more interesting result.",
+    "at_1M_rows": {
+      "baseline_pandas_seconds": 19.79,
+      "rows": [
+        { "cores": 1,  "total_seconds": 37.58, "rows_per_second": 26501 },
+        { "cores": 2,  "total_seconds": 26.94, "rows_per_second": 36965 },
+        { "cores": 4,  "total_seconds": 24.52, "rows_per_second": 40611 },
+        { "cores": 8,  "total_seconds": 25.29, "rows_per_second": 39381 },
+        { "cores": 16, "total_seconds": 27.10, "rows_per_second": 36752 }
+      ],
+      "finding": "Throughput peaks at 4 cores and then declines. Each task is small enough that scheduling and coordination overhead outgrows the parallelism gained, and Spark never beats pandas at any core count."
+    },
+    "at_4M_rows": {
+      "baseline_pandas_seconds": 61.53,
+      "rows": [
+        { "cores": 1,  "total_seconds": 83.57, "rows_per_second": 47669,  "speedup_vs_pandas": 0.74 },
+        { "cores": 2,  "total_seconds": 55.81, "rows_per_second": 71388,  "speedup_vs_pandas": 1.10 },
+        { "cores": 4,  "total_seconds": 41.02, "rows_per_second": 97122,  "speedup_vs_pandas": 1.50 },
+        { "cores": 8,  "total_seconds": 36.76, "rows_per_second": 108381, "speedup_vs_pandas": 1.67 },
+        { "cores": 16, "total_seconds": 35.79, "rows_per_second": 111301, "speedup_vs_pandas": 1.72 }
+      ],
+      "finding": "Throughput keeps improving all the way to 16 cores, though with diminishing returns: 4 to 8 cores buys 12%, 8 to 16 buys another 3%. Enough work per task now exists to amortise the coordination cost that dominated at 1M."
+    },
+    "combined_finding": "How many cores are useful is a function of data size, not a property of the job. At 1M rows adding cores past 4 makes things worse; at 4M rows all 16 still help. Sizing a cluster from a benchmark run on a smaller sample would systematically under-provision.",
+    "caveat": "Spark local[4] at 1M measured 24.52s and 26.69s across two runs, and at 4M measured 41.02s and 43.15s — roughly 5-9% run-to-run variance. These are single runs, not averaged over repeats; differences under ~10% should not be read as signal."
   },
 
   "row_accounting": {

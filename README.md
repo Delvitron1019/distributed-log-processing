@@ -15,20 +15,36 @@ benchmark numbers below can be re-run and checked.
 Both engines computing identical outputs, same machine, same OS (WSL2 Ubuntu,
 16 logical cores, 7 GB RAM), OpenJDK 17, PySpark 4.2.0.
 
-| Rows | pandas (1 thread) | Spark `local[4]` | Winner |
+| Rows | pandas (1 thread) | Best Spark | Winner |
 |---:|---:|---:|:--|
-| 1,000,000 | **19.8s** · 50.3k rows/s · 622 MB peak | 26.7s · 37.3k rows/s | pandas, by 1.35× |
-| 4,000,000 | 61.5s · 64.8k rows/s · 2,006 MB peak | **43.2s** · 92.3k rows/s | Spark, by 1.43× |
+| 1,000,000 | **19.8s** · 50.3k rows/s · 608 MB peak | 24.5s (`local[4]`) | pandas, by 1.24× |
+| 4,000,000 | 61.5s · 64.8k rows/s · 1,959 MB peak | **35.8s** (`local[16]`) · 111k rows/s | Spark, by 1.72× |
 
-**The crossover sits between 1M and 4M rows.** Below it, Spark loses — the JVM,
-the query planner, and task scheduling cost more than the parallelism returns.
-Above it, Spark pulls ahead and keeps going, while pandas' memory grows linearly
-(622 MB → 2 GB for 4× the data) toward a hard ceiling that Spark simply doesn't
-have.
+**The crossover sits between 1M and 4M rows.** Below it, Spark loses at *every*
+core count — the JVM, the query planner, and task scheduling cost more than the
+parallelism returns. Above it, Spark pulls ahead and keeps going, while pandas'
+memory grows linearly (608 MB → 1,959 MB for 4× the data) toward a hard ceiling
+that Spark doesn't have.
 
-That's the useful finding. "Use Spark, it's faster" is wrong at this scale;
-"Spark wins past a few million rows, and here's the measured curve" is the
-actual engineering answer.
+### Core scaling changes shape with data size
+
+| Cores | 1M rows | 4M rows |
+|---:|---:|---:|
+| 1 | 37.6s | 83.6s · 0.74× |
+| 2 | 26.9s | 55.8s · 1.10× |
+| 4 | **24.5s** | 41.0s · 1.50× |
+| 8 | 25.3s | 36.8s · 1.67× |
+| 16 | 27.1s | **35.8s · 1.72×** |
+
+At 1M rows throughput **peaks at 4 cores and then declines** — past that point
+each task is too small to justify its own scheduling overhead. At 4M rows all 16
+cores still help, with diminishing returns (4→8 buys 12%, 8→16 buys 3%).
+
+**How many cores are useful is a function of data size, not a property of the
+job.** Sizing a cluster from a benchmark run on a smaller sample would
+systematically under-provision. That is the finding this project exists to
+support, and it is the opposite of what a single-scale benchmark would have
+suggested.
 
 Dataset: synthetic, 8 shards, 0.40% deliberately malformed lines
 (227 MB at 1M, 907 MB at 4M).

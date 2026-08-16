@@ -1,0 +1,81 @@
+{
+  "rows": [
+    {
+      "engine": "pandas (1 thread)",
+      "cores": 1,
+      "seconds": 61.53,
+      "rows_per_second": 64750,
+      "speedup_vs_pandas": 1.0
+    },
+    {
+      "engine": "Spark local[1]",
+      "cores": 1,
+      "seconds": 83.57,
+      "wall_seconds": 92.14,
+      "rows_per_second": 47669,
+      "stage_seconds": {
+        "endpoint_stats": 16.53,
+        "error_timeline": 5.2,
+        "service_health": 6.22,
+        "top_users": 4.21
+      },
+      "speedup_vs_pandas": 0.74
+    },
+    {
+      "engine": "Spark local[2]",
+      "cores": 2,
+      "seconds": 55.81,
+      "wall_seconds": 63.9,
+      "rows_per_second": 71388,
+      "stage_seconds": {
+        "endpoint_stats": 11.57,
+        "error_timeline": 3.7,
+        "service_health": 3.67,
+        "top_users": 2.58
+      },
+      "speedup_vs_pandas": 1.1
+    },
+    {
+      "engine": "Spark local[4]",
+      "cores": 4,
+      "seconds": 41.02,
+      "wall_seconds": 48.25,
+      "rows_per_second": 97122,
+      "stage_seconds": {
+        "endpoint_stats": 9.31,
+        "error_timeline": 3.44,
+        "service_health": 3.0,
+        "top_users": 2.07
+      },
+      "speedup_vs_pandas": 1.5
+    },
+    {
+      "engine": "Spark local[8]",
+      "cores": 8,
+      "seconds": 36.76,
+      "wall_seconds": 45.29,
+      "rows_per_second": 108381,
+      "stage_seconds": {
+        "endpoint_stats": 8.55,
+        "error_timeline": 3.18,
+        "service_health": 3.16,
+        "top_users": 2.2
+      },
+      "speedup_vs_pandas": 1.67
+    },
+    {
+      "engine": "Spark local[16]",
+      "cores": 16,
+      "seconds": 35.79,
+      "wall_seconds": 43.67,
+      "rows_per_second": 111301,
+      "stage_seconds": {
+        "endpoint_stats": 9.21,
+        "error_timeline": 2.91,
+        "service_health": 2.87,
+        "top_users": 2.02
+      },
+      "speedup_vs_pandas": 1.72
+    }
+  ]
+}
