@@ -1,0 +1,7 @@
+# Pinned to what the benchmarks in the README were actually run against.
+pyspark==4.2.0
+pandas==2.2.3
+pyarrow>=15.0.0
+
+# Requires a JVM at runtime (OpenJDK 17 was used).
+# Ubuntu/WSL:  sudo apt-get install -y openjdk-17-jre-headless

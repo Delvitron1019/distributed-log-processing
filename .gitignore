@@ -1,0 +1,21 @@
+# Generated data — reproduce with generate_logs.py, never commit.
+# The 1M corpus alone is 227 MB; the 4M corpus is 907 MB.
+data/
+
+# Spark scratch
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

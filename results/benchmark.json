@@ -1,0 +1,67 @@
+{
+  "environment": {
+    "os": "WSL2 Ubuntu 24.04 on Windows 11",
+    "cpu_logical_cores": 16,
+    "ram_gb": 7,
+    "java": "OpenJDK 17.0.19",
+    "pyspark": "4.2.0",
+    "python": "3.12.3",
+    "note": "Both engines run in this same environment. An earlier version of this benchmark compared pandas on Windows against Spark on WSL, which measured the operating system as much as the engine — the identical pandas workload took 29.17s on Windows and 19.79s in WSL."
+  },
+
+  "cross_engine": {
+    "description": "pandas vs Spark computing identical outputs, same machine, same OS.",
+    "rows": [
+      {
+        "dataset_rows": 1000000,
+        "engine": "pandas (1 thread)",
+        "total_seconds": 19.79,
+        "rows_per_second": 50336,
+        "peak_rss_mb": 608
+      },
+      {
+        "dataset_rows": 1000000,
+        "engine": "Spark local[4]",
+        "total_seconds": 26.69,
+        "rows_per_second": 37309,
+        "speedup_vs_pandas": 0.74
+      },
+      {
+        "dataset_rows": 4000000,
+        "engine": "pandas (1 thread)",
+        "total_seconds": 61.53,
+        "rows_per_second": 64750,
+        "peak_rss_mb": 1959
+      },
+      {
+        "dataset_rows": 4000000,
+        "engine": "Spark local[4]",
+        "total_seconds": 43.15,
+        "rows_per_second": 92328,
+        "speedup_vs_pandas": 1.43
+      }
+    ],
+    "finding": "The crossover sits between 1M and 4M rows. Below it Spark loses outright; above it Spark pulls ahead while pandas' memory grows linearly toward a ceiling Spark does not have."
+  },
+
+  "spark_core_scaling": {
+    "description": "Spark only, 1M rows, varying local[N]. Internally comparable (all runs in WSL). No cross-engine speedup is quoted here because these runs predate the environment fix.",
+    "dataset_rows": 1000000,
+    "rows": [
+      { "cores": 1,  "total_seconds": 37.58, "rows_per_second": 26501 },
+      { "cores": 2,  "total_seconds": 26.94, "rows_per_second": 36965 },
+      { "cores": 4,  "total_seconds": 24.52, "rows_per_second": 40611 },
+      { "cores": 8,  "total_seconds": 25.29, "rows_per_second": 39381 },
+      { "cores": 16, "total_seconds": 27.10, "rows_per_second": 36752 }
+    ],
+    "finding": "Throughput peaks at 4 cores and declines by 16. At this data size each task is small enough that scheduling and coordination overhead outgrows the parallelism gained.",
+    "caveat": "Spark local[4] at 1M measured 24.52s here and 26.69s in the cross-engine run — roughly 9% run-to-run variance. Single runs, not averaged over repeats; differences under ~10% should not be read as signal."
+  },
+
+  "row_accounting": {
+    "description": "Physical lines reconciled against parsed + rejected + reader-skipped.",
+    "1M":  { "physical_lines": 1000000, "parsed": 995976,  "rejected": 3030,  "skipped_by_reader": 994,  "unaccounted": 0 },
+    "4M":  { "physical_lines": 4000000, "parsed": 3983939, "rejected": 12131, "skipped_by_reader": 3930, "unaccounted": 0 },
+    "finding": "pandas and Spark originally disagreed on the reject count (4,024 vs 3,030 at 1M) while agreeing exactly on parsed rows. Spark's JSON reader silently skips blank lines and never emits a record for them, so they are invisible to the corrupt-record path. Counting physical lines separately closes the gap to zero."
+  }
+}
